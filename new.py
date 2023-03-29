@@ -1,12 +1,15 @@
 import pygame
 import random
+import sys
 
 # Define constants
-SCREEN_WIDTH = 728
-SCREEN_HEIGHT = 735
+# SCREEN_WIDTH = 728
+# SCREEN_HEIGHT = 735
 ENEMY_SPEED = 4
-BULLET_SPEED = 35
-ENEMY_COUNT = 9
+ENEMY_BULLET_SPEED = 2.5
+ENEMY_BULLET_DAMAGE = random.randint(5, 20)
+BULLET_SPEED = 30
+ENEMY_COUNT = 8
 SCORE_FONT_SIZE = 25
 GAMEOVER_FONT_SIZE = 70
 BACKGROUND_SPEED = 0.5
@@ -14,17 +17,25 @@ PLAYER_HEALTH = 100
 
 # Initialize pygame
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+# Set the screen size to match the display resolution
+screen_width, screen_height = pygame.display.Info().current_w, pygame.display.Info().current_h
+
+screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
+
 pygame.display.set_caption('Space invaders')
 
 # Load resources
 icon_image = pygame.image.load('spaceship.png')
 pygame.display.set_icon(icon_image)
-background_image = pygame.image.load('background_1.png')
+
+background_image = pygame.image.load('bg6.jpg')
+
+# Scale the background image to fit the screen
+background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
+
 player_image = pygame.image.load('spaceship.png')
 bullet_image = pygame.image.load('bullet.png')
-bullet_image1 = pygame.image.load('bullet2.png')
-bullet_image2 = pygame.image.load('bullet3.png')
 enemy_images = [pygame.image.load('enemy_1.png'), pygame.image.load('enemy_2.png')]
 shoot_sound = pygame.mixer.Sound('shoot.wav')
 kill_sound = pygame.mixer.Sound('invaderkilled.wav')
@@ -33,11 +44,13 @@ background_music.load("DeathMatch (Boss Theme).ogg")
 background_music.play(-1)
 gameover_font = pygame.font.Font('freesansbold.ttf', GAMEOVER_FONT_SIZE)
 score_font = pygame.font.Font('freesansbold.ttf', SCORE_FONT_SIZE)
+enemy_bullet_image = pygame.image.load("bullet3.png")
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
 enemies = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
+enemy_bullets = pygame.sprite.Group()
 
 # Create player sprite
 class Player(pygame.sprite.Sprite):
@@ -45,8 +58,8 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         self.image = player_image
         self.rect = self.image.get_rect()
-        self.rect.centerx = SCREEN_WIDTH / 2
-        self.rect.bottom = SCREEN_HEIGHT - 5
+        self.rect.centerx = pygame.FULLSCREEN / 2
+        self.rect.bottom = screen_height - 5
         self.health = PLAYER_HEALTH
         all_sprites.add(self)
 
@@ -58,8 +71,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.x += 7
         if self.rect.left < 0:
             self.rect.left = 0
-        elif self.rect.right > SCREEN_WIDTH:
-            self.rect.right = SCREEN_WIDTH
+        elif self.rect.right > screen_width:
+            self.rect.right = screen_height
 
     def shoot(self):
         if len(bullets) < 3:
@@ -80,17 +93,48 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
         self.image = random.choice(enemy_images)
         self.rect = self.image.get_rect()
-        self.rect.x = random.randrange(0, SCREEN_WIDTH - self.rect.width)
-        self.rect.y = random.randrange(1, )
+        self.rect.x = random.randrange(0, screen_width - self.rect.width)
+        self.rect.y = random.randrange(10, 30)
         self.speed = ENEMY_SPEED
+        self.last_shot_time = pygame.time.get_ticks()
+        self.shot_delay = random.randint(3000, 5000) # time of last shot
         all_sprites.add(self)
         enemies.add(self)
 
     def update(self):
         self.rect.x += self.speed
-        if self.rect.right > SCREEN_WIDTH or self.rect.left < 0:
+        if self.rect.right > screen_width or self.rect.left < 0:
             self.speed = -self.speed
             self.rect.y += self.rect.height
+        if pygame.time.get_ticks() - self.last_shot_time > self.shot_delay:
+            self.last_shot_time = pygame.time.get_ticks()
+            enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
+            all_sprites.add(enemy_bullet)
+            enemy_bullets.add(enemy_bullet)
+
+
+    def shoot(self):
+        enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
+        all_sprites.add(enemy_bullet)
+        enemy_bullets.add(enemy_bullet)
+        self.last_shot_time = pygame.time.get_ticks()
+
+
+class EnemyBullet(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = enemy_bullet_image
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.speed = ENEMY_BULLET_SPEED
+        all_sprites.add(self)
+        enemy_bullets.add(self)
+
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.top > screen_height:
+            self.kill()
 
 # Create bullet sprite
 class Bullet(pygame.sprite.Sprite):
@@ -168,22 +212,35 @@ while running:
 
     # Draw enemies killed
     enemies_killed_text = score_font.render(f'Enemies Killed: {enemies_killed}', True, (255, 255, 255))
-    screen.blit(enemies_killed_text, (SCREEN_WIDTH - enemies_killed_text.get_width() - 10, 10))
+    screen.blit(enemies_killed_text, (screen_width - enemies_killed_text.get_width() - 10, 10))
+
+    # Check for collisions between player and enemy bullets
+    hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
+    for hit in hits:
+        player.health -= ENEMY_BULLET_DAMAGE
+        if player.health <= 0:
+            player.kill()
+            game_over()
 
     # Check for collisions between player and enemies
     hits = pygame.sprite.spritecollide(player, enemies, False)
     if hits:
+        player.kill()
+        game_over()
+
+    def game_over():
         gameover_text = gameover_font.render('Game Over!', True, (223, 50, 73))
-        screen.blit(gameover_text, (SCREEN_WIDTH / 2 - gameover_text.get_width() / 2, SCREEN_HEIGHT / 2 - gameover_text.get_height() / 2))
+        screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
         pygame.display.flip()
         pygame.time.wait(3000)
         background_music.stop()
-        running = False
+        pygame.quit()
+        sys.exit()
 
     # Check if game is over
     if not enemies:
         gameover_text = gameover_font.render('You Win!', True, (255, 255, 255))
-        screen.blit(gameover_text, (SCREEN_WIDTH / 2 - gameover_text.get_width() / 2, SCREEN_HEIGHT / 2 - gameover_text.get_height() / 2))
+        screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
         pygame.display.flip()
         pygame.time.wait(3000)
         background_music.stop()
@@ -191,3 +248,4 @@ while running:
 
     # Flip the display
     pygame.display.flip()
+

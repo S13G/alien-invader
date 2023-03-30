@@ -1,3 +1,4 @@
+import math
 import pygame
 import random
 import sys
@@ -31,17 +32,26 @@ pygame.display.set_icon(icon_image)
 
 background_image = pygame.image.load('bg6.jpg')
 
+main_background_image = pygame.image.load('main_bg.jpeg')
+
 # Scale the background image to fit the screen
 background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
+
+main_background_image = pygame.transform.scale(main_background_image, (screen_width, screen_height))
+
+# Create a vector for shaking effect
+shaking_vector = pygame.math.Vector2(0, 0)
+
+# Create a start button
+start_button = pygame.image.load('start.png')
+start_button_rect = start_button.get_rect(center=(screen.get_width()/2, screen.get_height()/2 + 100))
+
 
 player_image = pygame.image.load('spaceship.png')
 bullet_image = pygame.image.load('bullet.png')
 enemy_images = [pygame.image.load('enemy_1.png'), pygame.image.load('enemy_2.png')]
 shoot_sound = pygame.mixer.Sound('shoot.wav')
 kill_sound = pygame.mixer.Sound('invaderkilled.wav')
-background_music = pygame.mixer.music
-background_music.load("DeathMatch (Boss Theme).ogg")
-background_music.play(-1)
 gameover_font = pygame.font.Font('freesansbold.ttf', GAMEOVER_FONT_SIZE)
 score_font = pygame.font.Font('freesansbold.ttf', SCORE_FONT_SIZE)
 enemy_bullet_image = pygame.image.load("bullet3.png")
@@ -167,85 +177,124 @@ for i in range(ENEMY_COUNT):
 player = Player()
 all_sprites.add(player)
 
-while running:
-# Set framerate
-    clock.tick(60)
-    # Check for events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                player.shoot()
+def game_loop():
+    global running, score, enemies_killed
+    background_music = pygame.mixer.music
+    background_music.load("DeathMatch (Boss Theme).ogg")
+    background_music.play(-1)
+    while running:
+        # Set framerate
+        clock.tick(60)
+        # Check for events
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    player.shoot()
 
-    # Update sprites
-    all_sprites.update()
+        # Update sprites
+        all_sprites.update()
 
-    # Check for collisions between bullets and enemies
-    hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
-    for hit in hits:
-        enemies_killed += 1
-        score += 10
-        kill_sound.play()
-        enemy = Enemy()
-        all_sprites.add(enemy)
-        enemies.add(enemy)
+        # Check for collisions between bullets and enemies
+        hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
+        for _ in hits:
+            enemies_killed += 1
+            score += 10
+            kill_sound.play()
+            enemy = Enemy()
+            all_sprites.add(enemy)
+            enemies.add(enemy)
 
-    # Draw everything
-    screen.blit(background_image, (0, 0))
-    screen.blit(background_image, (0, background_image.get_height()))
-    background_image_rect = background_image.get_rect()
-    background_image_rect.y -= BACKGROUND_SPEED
-    if background_image_rect.bottom <= 0:
-        background_image_rect.y = 0
-    screen.blit(background_image, background_image_rect)
-    all_sprites.draw(screen)
+        # Draw everything
+        screen.blit(background_image, (0, 0))
+        screen.blit(background_image, (0, background_image.get_height()))
+        background_image_rect = background_image.get_rect()
+        background_image_rect.y -= BACKGROUND_SPEED
+        if background_image_rect.bottom <= 0:
+            background_image_rect.y = 0
+        screen.blit(background_image, background_image_rect)
+        all_sprites.draw(screen)
 
-    # Draw health bars
-    for sprite in all_sprites:
-        if isinstance(sprite, Player):
-            sprite.draw_health_bar()
+        # Draw health bars
+        for sprite in all_sprites:
+            if isinstance(sprite, Player):
+                sprite.draw_health_bar()
 
-    # Draw score
-    score_text = score_font.render(f'Score: {score}', True, (255, 255, 255))
-    screen.blit(score_text, (10, 10))
+        # Draw score
+        score_text = score_font.render(f'Score: {score}', True, (255, 255, 255))
+        screen.blit(score_text, (10, 10))
 
-    # Draw enemies killed
-    enemies_killed_text = score_font.render(f'Enemies Killed: {enemies_killed}', True, (255, 255, 255))
-    screen.blit(enemies_killed_text, (screen_width - enemies_killed_text.get_width() - 10, 10))
+        # Draw enemies killed
+        enemies_killed_text = score_font.render(f'Enemies Killed: {enemies_killed}', True, (255, 255, 255))
+        screen.blit(enemies_killed_text, (screen_width - enemies_killed_text.get_width() - 10, 10))
 
-    # Check for collisions between player and enemy bullets
-    hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
-    for hit in hits:
-        player.health -= ENEMY_BULLET_DAMAGE
-        if player.health <= 0:
+        # Check for collisions between player and enemy bullets
+        hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
+        for hit in hits:
+            player.health -= ENEMY_BULLET_DAMAGE
+            if player.health <= 0:
+                player.kill()
+                game_over()
+
+        # Check for collisions between player and enemies
+        hits = pygame.sprite.spritecollide(player, enemies, False)
+        if hits:
             player.kill()
             game_over()
 
-    # Check for collisions between player and enemies
-    hits = pygame.sprite.spritecollide(player, enemies, False)
-    if hits:
-        player.kill()
-        game_over()
+        def game_over():
+            gameover_text = gameover_font.render('Game Over!', True, (223, 50, 73))
+            screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            background_music.stop()
+            pygame.quit()
+            sys.exit()
 
-    def game_over():
-        gameover_text = gameover_font.render('Game Over!', True, (223, 50, 73))
-        screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
+        # Check if game is over
+        if not enemies:
+            gameover_text = gameover_font.render('You Win!', True, (255, 255, 255))
+            screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
+            pygame.display.flip()
+            pygame.time.wait(3000)
+            background_music.stop()
+            running = False
+
+        # Flip the display
         pygame.display.flip()
-        pygame.time.wait(3000)
-        background_music.stop()
-        pygame.quit()
-        sys.exit()
+    background_music.stop()
 
-    # Check if game is over
-    if not enemies:
-        gameover_text = gameover_font.render('You Win!', True, (255, 255, 255))
-        screen.blit(gameover_text, (screen_width / 2 - gameover_text.get_width() / 2, screen_height / 2 - gameover_text.get_height() / 2))
-        pygame.display.flip()
-        pygame.time.wait(3000)
-        background_music.stop()
-        running = False
+main_background_music = pygame.mixer.music
+main_background_music.load("Alone.ogg")
+main_background_music.play(-1)
+# Main screen loop
+while True:
+    # Draw the background image
+    screen.blit(main_background_image, shaking_vector)
+    
+    # Update the shaking effect
+    shaking_vector.x = 5 * math.sin(pygame.time.get_ticks() / 100)
 
-    # Flip the display
+    # Draw the start button
+    screen.blit(start_button, start_button_rect)
+
+    # Check for mouse click on start button
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            if start_button_rect.collidepoint(mouse_pos):
+                main_background_music = pygame.mixer.music
+                main_background_music.load("Alone.ogg")
+                main_background_music.play(-1)
+                # Start the game
+                game_loop()
+                running = True
+                pygame.mixer.music
+                pygame.mixer.music.load("Alone.ogg")
+                pygame.mixer.music.play(-1)
+   
     pygame.display.flip()
-
+    clock.tick(60)

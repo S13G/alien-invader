@@ -24,15 +24,21 @@ screen_width, screen_height = pygame.display.Info().current_w, pygame.display.In
 
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
 
+transition_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+
+transition_surface.fill((255, 255, 255))
+
 pygame.display.set_caption('Space invaders')
 
 # Load resources
 icon_image = pygame.image.load('spaceship.png')
+
 pygame.display.set_icon(icon_image)
 
 background_image = pygame.image.load('bg6.jpg')
 
 main_background_image = pygame.image.load('main_bg.jpeg')
+
 
 # Scale the background image to fit the screen
 background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
@@ -104,7 +110,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = random.choice(enemy_images)
         self.rect = self.image.get_rect()
         self.rect.x = random.randrange(0, screen_width - self.rect.width)
-        self.rect.y = random.randrange(10, 30)
+        self.rect.y = random.randrange(-10, 30)
         self.speed = ENEMY_SPEED
         self.last_shot_time = pygame.time.get_ticks()
         self.shot_delay = random.randint(3000, 5000) # time of last shot
@@ -178,7 +184,7 @@ player = Player()
 all_sprites.add(player)
 
 def game_loop():
-    global running, score, enemies_killed
+    global running, score, enemies_killed, transition_alpha
     background_music = pygame.mixer.music
     background_music.load("DeathMatch (Boss Theme).ogg")
     background_music.play(-1)
@@ -229,9 +235,15 @@ def game_loop():
         enemies_killed_text = score_font.render(f'Enemies Killed: {enemies_killed}', True, (255, 255, 255))
         screen.blit(enemies_killed_text, (screen_width - enemies_killed_text.get_width() - 10, 10))
 
+        # Draw transition effect
+        if transition_alpha > 0:
+            transition_surface.set_alpha(transition_alpha)
+            screen.blit(transition_surface, (0, 0))
+            transition_alpha = max(0, transition_alpha - 5)
+
         # Check for collisions between player and enemy bullets
         hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
-        for hit in hits:
+        for _ in hits:
             player.health -= ENEMY_BULLET_DAMAGE
             if player.health <= 0:
                 player.kill()
@@ -260,11 +272,14 @@ def game_loop():
             pygame.time.wait(3000)
             background_music.stop()
             running = False
+        
 
         # Flip the display
         pygame.display.flip()
     background_music.stop()
 
+
+# Main Screen
 main_background_music = pygame.mixer.music
 main_background_music.load("Alone.ogg")
 main_background_music.play(-1)
@@ -289,6 +304,8 @@ while True:
                 main_background_music = pygame.mixer.music
                 main_background_music.load("Alone.ogg")
                 main_background_music.play(-1)
+                transition_alpha = 255
+                pygame.mixer.music.stop()
                 # Start the game
                 game_loop()
                 running = True

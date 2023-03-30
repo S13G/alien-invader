@@ -1,0 +1,6 @@
+beautifulsoup4==4.12.0
+colorama==0.4.6
+creategitignore==0.2.1
+pygame==2.3.0
+soupsieve==2.4
+utils==1.0.1

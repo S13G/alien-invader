@@ -28,16 +28,16 @@ transition_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALP
 
 transition_surface.fill((255, 255, 255))
 
-pygame.display.set_caption('Space invaders')
+pygame.display.set_caption('resources/MapleStory Universe')
 
 # Load resources
-icon_image = pygame.image.load('spaceship.png')
+icon_image = pygame.image.load('resources/spaceship.png')
 
 pygame.display.set_icon(icon_image)
 
-background_image = pygame.image.load('bg6.jpg')
+background_image = pygame.image.load('resources/bg6.jpg')
 
-main_background_image = pygame.image.load('main_bg.jpeg')
+main_background_image = pygame.image.load('resources/main_bg.jpeg')
 
 
 # Scale the background image to fit the screen
@@ -49,18 +49,18 @@ main_background_image = pygame.transform.scale(main_background_image, (screen_wi
 shaking_vector = pygame.math.Vector2(0, 0)
 
 # Create a start button
-start_button = pygame.image.load('start.png')
+start_button = pygame.image.load('resources/start.png')
 start_button_rect = start_button.get_rect(center=(screen.get_width()/2, screen.get_height()/2 + 100))
 
 
-player_image = pygame.image.load('spaceship.png')
-bullet_image = pygame.image.load('bullet.png')
-enemy_images = [pygame.image.load('enemy_1.png'), pygame.image.load('enemy_2.png')]
-shoot_sound = pygame.mixer.Sound('shoot.wav')
-kill_sound = pygame.mixer.Sound('invaderkilled.wav')
-gameover_font = pygame.font.Font('freesansbold.ttf', GAMEOVER_FONT_SIZE)
-score_font = pygame.font.Font('freesansbold.ttf', SCORE_FONT_SIZE)
-enemy_bullet_image = pygame.image.load("bullet3.png")
+player_image = pygame.image.load('resources/spaceship.png')
+bullet_image = pygame.image.load('resources/bullet.png')
+enemy_images = [pygame.image.load('resources/enemy_1.png'), pygame.image.load('resources/enemy_2.png')]
+shoot_sound = pygame.mixer.Sound('resources/shoot.wav')
+kill_sound = pygame.mixer.Sound('resources/invaderkilled.wav')
+gameover_font = pygame.font.Font('resources/TeachableSans-Bold.ttf', GAMEOVER_FONT_SIZE)
+score_font = pygame.font.Font('resources/TeachableSans-Bold.ttf', SCORE_FONT_SIZE)
+enemy_bullet_image = pygame.image.load("resources/bullet3.png")
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
@@ -186,7 +186,7 @@ all_sprites.add(player)
 def game_loop():
     global running, score, enemies_killed, transition_alpha
     background_music = pygame.mixer.music
-    background_music.load("DeathMatch (Boss Theme).ogg")
+    background_music.load("resources/DeathMatch (Boss Theme).ogg")
     background_music.play(-1)
     while running:
         # Set framerate
@@ -281,7 +281,7 @@ def game_loop():
 
 # Main Screen
 main_background_music = pygame.mixer.music
-main_background_music.load("Alone.ogg")
+main_background_music.load("resources/Alone.ogg")
 main_background_music.play(-1)
 # Main screen loop
 while True:
@@ -302,7 +302,7 @@ while True:
             mouse_pos = pygame.mouse.get_pos()
             if start_button_rect.collidepoint(mouse_pos):
                 main_background_music = pygame.mixer.music
-                main_background_music.load("Alone.ogg")
+                main_background_music.load("resources/Alone.ogg")
                 main_background_music.play(-1)
                 transition_alpha = 255
                 pygame.mixer.music.stop()
@@ -310,7 +310,7 @@ while True:
                 game_loop()
                 running = True
                 pygame.mixer.music
-                pygame.mixer.music.load("Alone.ogg")
+                pygame.mixer.music.load("resources/Alone.ogg")
                 pygame.mixer.music.play(-1)
    
     pygame.display.flip()

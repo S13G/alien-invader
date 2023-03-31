@@ -13,7 +13,6 @@ BULLET_SPEED = 30
 ENEMY_COUNT = 8
 SCORE_FONT_SIZE = 25
 GAMEOVER_FONT_SIZE = 70
-BACKGROUND_SPEED = 0.5
 PLAYER_HEALTH = 100
 
 # Initialize pygame
@@ -31,36 +30,39 @@ transition_surface.fill((255, 255, 255))
 pygame.display.set_caption('resources/MapleStory Universe')
 
 # Load resources
-icon_image = pygame.image.load('resources/spaceship.png')
+icon_image = pygame.image.load('resources/player.png')
 
 pygame.display.set_icon(icon_image)
 
-background_image = pygame.image.load('resources/bg6.jpg')
+background_image = pygame.image.load('resources/bg.JPG')
 
-main_background_image = pygame.image.load('resources/main_bg.jpeg')
+main_background_image = pygame.image.load('resources/bg2.jpg')
 
+# Set up the initial position of the background
+background_x = 0
+
+# Set up the scrolling speed of the background
+scroll_speed = 1
 
 # Scale the background image to fit the screen
 background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
+background_image2 = background_image.copy()
 
 main_background_image = pygame.transform.scale(main_background_image, (screen_width, screen_height))
 
-# Create a vector for shaking effect
-shaking_vector = pygame.math.Vector2(0, 0)
-
 # Create a start button
-start_button = pygame.image.load('resources/start.png')
-start_button_rect = start_button.get_rect(center=(screen.get_width()/2, screen.get_height()/2 + 100))
+start_button = pygame.image.load('resources/start1.png')
+start_button_rect = start_button.get_rect(center=(screen.get_width()/2, screen.get_height()/2 + 50))
 
 
-player_image = pygame.image.load('resources/spaceship.png')
-bullet_image = pygame.image.load('resources/polybullet.png')
-enemy_images = [pygame.image.load('resources/mushroom_enemy_1.png'), pygame.image.load('resources/mushenemy_2.png')]
+player_image = pygame.image.load('resources/player.png')
+bullet_image = pygame.image.load('resources/bullet.png')
+enemy_images = [pygame.image.load('resources/enemy_1.png'), pygame.image.load('resources/enemy_2.png')]
 shoot_sound = pygame.mixer.Sound('resources/shoot.wav')
 kill_sound = pygame.mixer.Sound('resources/invaderkilled.wav')
 gameover_font = pygame.font.Font('resources/TeachableSans-Bold.ttf', GAMEOVER_FONT_SIZE)
 score_font = pygame.font.Font('resources/TeachableSans-Bold.ttf', SCORE_FONT_SIZE)
-enemy_bullet_image = pygame.image.load("resources/bullet4.png")
+enemy_bullet_image = [pygame.image.load("resources/bullet3.png"), pygame.image.load('resources/bullet5.png')]
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
@@ -139,7 +141,7 @@ class Enemy(pygame.sprite.Sprite):
 class EnemyBullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = enemy_bullet_image
+        self.image = random.choice(enemy_bullet_image)
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -183,11 +185,13 @@ for i in range(ENEMY_COUNT):
 player = Player()
 all_sprites.add(player)
 
+
 def game_loop():
-    global running, score, enemies_killed, transition_alpha
+    global running, score, enemies_killed, transition_alpha, background_x
     background_music = pygame.mixer.music
     background_music.load("resources/DeathMatch (Boss Theme).ogg")
     background_music.play(-1)
+
     while running:
         # Set framerate
         clock.tick(60)
@@ -211,17 +215,22 @@ def game_loop():
             enemy = Enemy()
             all_sprites.add(enemy)
             enemies.add(enemy)
+        
 
         # Draw everything
-        screen.blit(background_image, (0, 0))
-        screen.blit(background_image, (0, background_image.get_height()))
-        background_image_rect = background_image.get_rect()
-        background_image_rect.y -= BACKGROUND_SPEED
-        if background_image_rect.bottom <= 0:
-            background_image_rect.y = 0
-        screen.blit(background_image, background_image_rect)
+        screen.blit(background_image, (background_x, 0))
+        if background_x > 0:
+            screen.blit(background_image, (background_x - screen_width, 0))
+        else:
+            screen.blit(background_image, (background_x + screen_width, 0))
+        # Scroll the background image to the left
+        background_x -= scroll_speed
+        # If the background goes off the screen, wrap it around to the right side
+        if background_x <= -screen_width:
+            background_x = 0
         all_sprites.draw(screen)
 
+        
         # Draw health bars
         for sprite in all_sprites:
             if isinstance(sprite, Player):
@@ -276,6 +285,7 @@ def game_loop():
 
         # Flip the display
         pygame.display.flip()
+        clock.tick(60)
     background_music.stop()
 
 
@@ -286,11 +296,8 @@ main_background_music.play(-1)
 # Main screen loop
 while True:
     # Draw the background image
-    screen.blit(main_background_image, shaking_vector)
+    screen.blit(main_background_image, (0, 0))
     
-    # Update the shaking effect
-    shaking_vector.x = 5 * math.sin(pygame.time.get_ticks() / 100)
-
     # Draw the start button
     screen.blit(start_button, start_button_rect)
 

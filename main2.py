@@ -230,7 +230,6 @@ def game_loop():
             background_x = 0
         all_sprites.draw(screen)
 
-        
         # Draw health bars
         for sprite in all_sprites:
             if isinstance(sprite, Player):

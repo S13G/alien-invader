@@ -3,9 +3,6 @@ import pygame
 import random
 import sys
 
-# Define constants
-# SCREEN_WIDTH = 728
-# SCREEN_HEIGHT = 735
 ENEMY_SPEED = 4
 ENEMY_BULLET_SPEED = 2.5
 ENEMY_BULLET_DAMAGE = random.randint(5, 20)
